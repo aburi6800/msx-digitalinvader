@@ -35,7 +35,7 @@ https://webmsx.org/?MACHINE=MSXTRJ&DISKA_URL=https://github.com/aburi6800/msx-di
 - 消した数字の合計が10の倍数になると、UFO("n")が出現します。撃墜すると300ptsのボーナスです。
 - デジタルインベーダーに侵略されると、プレイヤーはライフを1つ失います。ライフがゼロになるとゲームオーバーです。
 
-<br
+<br>
 
 ## ビルド方法
 
