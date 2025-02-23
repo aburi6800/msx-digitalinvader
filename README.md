@@ -4,7 +4,6 @@
 # DIGIAL INVADER for MSX
 
 ## Play in WebMSX
-***
 
 - Please access the following URL.
 
@@ -13,7 +12,6 @@ https://webmsx.org/?MACHINE=MSXTRJ&DISKA_URL=https://github.com/aburi6800/msx-di
 <br>
 
 ## How to play
-***
 
 ### Control
 
@@ -40,19 +38,16 @@ Keyboards only.
 <br>
 
 ## Build
-***
 
 <br>
 
 ## License
-***
 
 MIT License
 
 <br>
 
 ## Thanks
-***
 
 - [Z88DK - The Development Kit for Z80 Computers](https://github.com/z88dk/z88dk)
 - [C-BIOS](http://cbios.sourceforge.net/)

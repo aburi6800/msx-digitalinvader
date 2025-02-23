@@ -4,7 +4,6 @@
 # デジタルインベーダー for MSX
 
 ## WebMSXでプレイする
-***
 
 - 以下のURLにアクセスしてください。
 
@@ -13,7 +12,6 @@ https://webmsx.org/?MACHINE=MSXTRJ&DISKA_URL=https://github.com/aburi6800/msx-di
 <br>
 
 ## プレイ方法
-***
 
 ### 操作方法
 
@@ -40,19 +38,16 @@ https://webmsx.org/?MACHINE=MSXTRJ&DISKA_URL=https://github.com/aburi6800/msx-di
 <br
 
 ## ビルド方法
-***
 
 <br>  
 
 ## ライセンス
-***
 
 MIT License
 
 <br>
 
 ## Thanks
-***
 
 - [Z88DK - The Development Kit for Z80 Computers](https://github.com/z88dk/z88dk)
 - [C-BIOS](http://cbios.sourceforge.net/)
