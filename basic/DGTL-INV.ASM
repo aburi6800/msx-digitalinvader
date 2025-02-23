@@ -6,7 +6,7 @@ LDIRVM:     EQU 0x005C                  ; BIOS LDIRVM
 	; BASICプログラムでスクリーンモード等設定済の前提で呼び出すこと
 	CALL SET_PTN_TBL
 	CALL SET_COL_TBL
-	CALL SET_SPRPTN_TBL
+;	CALL SET_SPRPTN_TBL
 	RET
 
 SET_PTN_TBL:
@@ -43,13 +43,13 @@ SET_COL_TBL_1:
 	CALL LDIRVM
 	RET
 
-SET_SPRPTN_TBL:
-	LD DE,0x3800
-	LD HL,SPRITE_PTN
-    ; BCレジスタにはパターン数*16の値を設定する
-	LD BC,576
-	CALL LDIRVM
-	RET
+;SET_SPRPTN_TBL:
+;	LD DE,0x3800
+;	LD HL,SPRITE_PTN
+;    ; BCレジスタにはパターン数*16の値を設定する
+;	LD BC,576
+;	CALL LDIRVM
+;	RET
 
     ; 以下にnMSXtilesのExport ASM Dataで出力したasmデータのBANK_PATTERN_0を貼り付ける
 BANK_PATTERN_0:
