@@ -3,6 +3,10 @@
 ---
 # DIGIAL INVADER for MSX
 
+<img src="image/01.png">
+
+<br>
+
 ## Play in WebMSX
 
 - Please access the following URL.

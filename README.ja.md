@@ -3,6 +3,10 @@
 ---
 # デジタルインベーダー for MSX
 
+<img src="image/01.png">
+
+<br>
+
 ## WebMSXでプレイする
 
 - 以下のURLにアクセスしてください。
@@ -39,7 +43,7 @@ https://webmsx.org/?MACHINE=MSXTRJ&DISKA_URL=https://github.com/aburi6800/msx-di
 
 ## ビルド方法
 
-<br>  
+<br>
 
 ## ライセンス
 
