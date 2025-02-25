@@ -19,15 +19,12 @@ https://webmsx.org/?MACHINE=MSXTRJ&DISKA_URL=https://github.com/aburi6800/msx-di
 
 ### Control
 
-Keyboards only.
-
-- Left arrow :
-    - Aim
-- Right arrow :
-    - Fire
-- Space key :
-    - Game start.
-
+- Cursor keys left/Joypad left
+    - Aiming
+- Cursor key right / Joypad right
+    - Beam
+- Spacebar / Trigger button
+    - Game Start
 <br>
 
 ### Rules
