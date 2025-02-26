@@ -50,7 +50,7 @@ void game_draw();
  * return:
  * - void
  */
-void buff_clear();
+void offscr_clear();
 
 /**
  * オフスクリーン書き込み
@@ -65,6 +65,24 @@ void buff_clear();
  * return:
  * - void
  */
-void buff_wrttext(uint8_t x, uint8_t y, char* text);
+void offscr_putTextLn(uint8_t x, uint8_t y, char* text);
+
+/**
+ * オフスクリーンへの矩形書き込み
+ * - 引数x,yの位置からw,hの幅、高さでテキストを書き込む。
+ * - テキストが描画範囲に満たない場合は、そこで処理を中断する。
+ * - 画面端のはみ出し処理はしていないので注意。←さすがにしないとダメだろ
+ *
+ * args:
+ * - x              uint8_t     描画更新先のX座標
+ * - y              uint8_t     描画先のY座標
+ * - w              uint8_t     描画幅
+ * - h              uint8_t     描画高さ
+ * - text           char*       表示テキストのアドレス、または配列
+ *
+ * return:
+ * - void
+ */
+void offscr_putTextRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, char* text);
 
 #endif
