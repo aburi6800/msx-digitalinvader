@@ -41,7 +41,29 @@ void game_update();
  */
 void game_draw();
 
-/**
+/*
+ * LCDデータクリア
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void lcd_clear();
+
+/*
+ * LCDデータをオフスクリーンへ書き込む
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void lcd_update();
+
+/*
  * オフスクリーンクリア
  *
  * args:
@@ -52,7 +74,7 @@ void game_draw();
  */
 void offscr_clear();
 
-/**
+/*
  * オフスクリーン書き込み
  * - 引数x,yの位置にテキストを書き込む。
  * - 画面端のはみ出し処理はしていないので注意。
@@ -67,7 +89,7 @@ void offscr_clear();
  */
 void offscr_putTextLn(uint8_t x, uint8_t y, char* text);
 
-/**
+/*
  * オフスクリーンへの矩形書き込み
  * - 引数x,yの位置からw,hの幅、高さでテキストを書き込む。
  * - テキストが描画範囲に満たない場合は、そこで処理を中断する。
