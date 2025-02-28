@@ -1,0 +1,49 @@
+{
+  "configurations": [
+    {
+      "type": "emulicious-debugger",
+      "request": "attach",
+      "name": "Attach to Emulicious",
+      "port": 58870
+    },
+    {
+      "type": "emulicious-debugger",
+      "request": "launch",
+      "name": "Launch in Emulicious",
+//      "program": "${workspaceFolder}/${command:AskForProgramName}",
+      "program": "${workspaceFolder}/dist/dgtl-inv.rom",
+      "port": 58870,
+      "stopOnEntry": true
+    },
+    {
+      "type": "dezog",
+      "request": "launch",
+      "name": "DeZog",
+      "remoteType": "mame",
+      "mame": {
+        "port": 23946
+      },
+      "z88dkv2": [ // Z88DK 2.3(dev) and DeZog 3.1 or higher
+        {
+          "path": "src/msx/main.asm.lis",
+          "mapFile": "dist/dgtl-inv.map",
+          "srcDirs": [
+            ""
+          ] // Sources mode
+        },
+        {
+          "path": "src/msx/psgdriver.asm.lis",
+          "mapFile": "dist/dgtl-inv.map",
+          "srcDirs": [
+            ""
+          ] // Sources mode
+        }
+      ],
+      "rootFolder": "${workspaceFolder}",
+      "commandsAfterLaunch": [
+        "-rmv",
+        // "-mv 0xc000 0x100"
+      ]
+    }
+  ]
+}

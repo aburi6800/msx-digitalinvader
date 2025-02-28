@@ -4,3 +4,4 @@
 *.sym
 build/*
 src/c/test/*
+mics/

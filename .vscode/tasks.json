@@ -33,6 +33,36 @@
         "linux": {
             "command": "(cd ${workspaceFolder}/build && make)"
         }
-    }
-]
+    },
+    {
+      "label": "MAME Launch",
+      "type": "shell",
+      "dependsOn":[
+        "Deploy to MAME"
+      ],
+      "linux": {
+          "command": "(cd ${workspaceFolder}/mics/mame && ./mame cbiosm1jp dgtl-inv)"
+      }
+    },
+    {
+      "label": "MAME Launch with debugger",
+      "type": "shell",
+      "dependsOn":[
+        "Deploy to MAME"
+      ],
+      "linux": {
+          "command": "(cd ${workspaceFolder}/mics/mame && ./mame cbiosm1jp dgtl-inv -debugger gdbstub -debug)"
+      }
+    },
+    {
+      "label": "Deploy to MAME",
+      "dependsOn":[
+        "Make Compile"
+      ],
+      "type": "shell",
+      "linux": {
+          "command": "(cd dist/ && rm -f ${workspaceFolder}/mics/mame/roms/msx1_cart/dgtl-inv.zip && zip -j ${workspaceFolder}/mics/mame/roms/msx1_cart/dgtl-inv.zip dgtl-inv.rom)"
+      }
+    },
+  ]
 }

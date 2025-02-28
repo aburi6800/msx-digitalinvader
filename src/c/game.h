@@ -7,61 +7,26 @@
 #include <stdint.h>
 
 
-/*
- * ゲーム初期化
- *
- * args:
- * - none
- *
- * return:
- * - void
- */
-void game_init();
+// ゲーム状態
+typedef enum {
+    STATE_START,
+    STATE_GAME,
+    STATE_CLEAR,
+    STATE_MISS,
+    STATE_OVER
+} game_state_t;
+
 
 /*
- * ゲーム処理
+ * ゲーム状態変更
  *
  * args:
- * - none
+ * - game_state_t    state       ゲーム状態
  *
  * return:
  * - void
  */
-void game_update();
-
-/*
- * ゲーム画面描画
- * H.TIMI割り込みで呼ばれる
- *
- * args:
- * - none
- *
- * return:
- * - void
- */
-void game_draw();
-
-/*
- * LCDデータクリア
- *
- * args:
- * - none
- *
- * return:
- * - void
- */
-void lcd_clear();
-
-/*
- * LCDデータをオフスクリーンへ書き込む
- *
- * args:
- * - none
- *
- * return:
- * - void
- */
-void lcd_update();
+void change_game_state(game_state_t s);
 
 /*
  * オフスクリーンクリア
@@ -72,7 +37,7 @@ void lcd_update();
  * return:
  * - void
  */
-void offscr_clear();
+void offscr_clear()__z88dk_fastcall;
 
 /*
  * オフスクリーン書き込み
@@ -106,5 +71,171 @@ void offscr_putTextLn(uint8_t x, uint8_t y, char* text);
  * - void
  */
 void offscr_putTextRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, char* text);
+
+/*
+ * LCDデータクリア
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void lcd_clear()__z88dk_fastcall;
+
+/*
+ * LCDに文字列データ設定
+ *
+ * args:
+ * - text           char*       表示テキストのアドレス、または配列
+ *
+ * return:
+ * - void
+ */
+void lcd_setText(char* text)__z88dk_fastcall;
+
+/*
+ * LCDデータをオフスクリーンへ書き込む
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void lcd_update()__z88dk_fastcall;
+
+/*
+ * ゲーム画面描画
+ * H.TIMI割り込みで呼ばれる
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void game_draw();
+
+/*
+ * ゲーム初期化
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void game_init()__z88dk_fastcall;
+
+/*
+ * ゲーム処理
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void game_update()__z88dk_fastcall;
+
+/*
+ * ゲーム開始処理
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void game_start()__z88dk_fastcall;
+
+/*
+ * ゲームメイン／ショット処理
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void game_main_shot()__z88dk_fastcall;
+
+/*
+ * ゲームメイン／プレイヤー処理
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void game_main_player()__z88dk_fastcall;
+
+/*
+ * ゲームメイン／エネミー処理
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void game_main_enemy()__z88dk_fastcall;
+
+/*
+ * ゲームメイン／LCDデータ更新処理
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void game_main_updateLCDData()__z88dk_fastcall;
+
+/*
+ * ゲームクリア処理
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void game_clear()__z88dk_fastcall;
+
+/*
+ * ゲームミス処理
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void game_miss()__z88dk_fastcall;
+
+/*
+ * ゲームオーバー処理
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void game_over()__z88dk_fastcall;
+
+/*
+ * ゲームメイン処理
+ *
+ * args:
+ * - none
+ *
+ * return:
+ * - void
+ */
+void game_main()__z88dk_fastcall;
 
 #endif

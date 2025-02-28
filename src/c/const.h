@@ -29,16 +29,35 @@
 // H.TIMI割り込みフックアドレス
 #define MSX_H_TIMI          0xfd9f
 
+// LCDデータ定数
+#define LCD_MINUS           11
+#define LCD_SPACE           15
+
 // キャラクタコード定数
 #define CHR_SPACE           0x20
+#define CHR_MINUS           0x2D
+#define CHR_0               0x30
+#define CHR_9               0x39
+#define CHR_A               0x41
+#define CHR_C               0x43
 
-// マクロ（インライン展開される）
-#define VPOS(x, y)  (VRAM_START + VRAM_WIDTH * y + x)
-#define POS(x, y)   (VRAM_WIDTH * y + x)
+// STICK定数
+#define STICK_NONE          0
+#define STICK_UP            1
+#define STICK_UPRIGHT       2
+#define STICK_RIGHT         3
+#define STICK_DOWNRIGHT     4
+#define STICK_DOWN          5
+#define STICK_LEFTDOWN      6
+#define STICK_LEFT          7
+#define STICK_UPLEFT        8
+
+// TRIGGER定数
+#define TRIGGER_SPACE       255
 
 // 仮想画面バッファの定義
-#define BUFF_WIDTH          32
-#define BUFF_HEIGHT         24
-#define BUFF_SIZE           BUFF_WIDTH * BUFF_HEIGHT
+#define OFFSCR_WIDTH        32
+#define OFFSCR_HEIGHT       24
+#define OFFSCR_SIZE         OFFSCR_WIDTH * OFFSCR_HEIGHT
 
 #endif
