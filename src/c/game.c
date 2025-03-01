@@ -1,7 +1,6 @@
 // License:MIT License
 // copyright-holders:Hitoshi Iwai
 
-#include <stdio.h>
 #include <msx.h>
 #include <msx/gfx.h>
 #include "const.h"
@@ -40,7 +39,7 @@ char lcdPtn0[16] = {'a', 'b', 'c', 'c', 'd', 'e', 'e', 'c', 'a', 'a', '`', '`', 
 char lcdPtn1[16] = {'p', 'q', 'r', 's', 't', 's', 'u', 'q', 'u', 's', 'v', 'y', 'x', 'w', 'w', '`'};
 
 // LCDデータ
-int lcdData[10] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15};
+uint8_t lcdData[10] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15};
 
 // 入力バッファ（方向）
 uint8_t buff_stick = 0;
@@ -64,9 +63,27 @@ uint8_t player_number = 1;
 // プレイヤーの残り
 uint8_t player_left = 3;
 
+// プレイヤーの残弾数
+uint8_t player_shot_left = 30;
+
 // 敵の列
 // 内部的には、表示する値+1を保持（ゼロは空白）
 uint8_t enemy_line[] = {0, 0, 0, 0, 0, 0};
+
+// 敵のウェイトカウンタ
+uint8_t enemy_wait_cnt = 0;
+
+// 敵のウェイトタイム
+uint8_t enemy_wait_time = 0;
+
+// 敵の残数
+uint8_t enemy_left = 0;
+
+// 敵の数字の合計数
+uint8_t enemy_summary = 0;
+
+// UFO発生フラグ
+bool_t enemy_ufo_flg = false;
 
 // ゲームの状態
 game_state_t game_state;
@@ -79,10 +96,56 @@ bool_t vsync_exec = false;
 
 
 /*
+ * PSGレジスタ初期化
+ *
+ * args:
+ * - reg            uint8_t     レジスタ番号
+ * - dat            uint8_t     データ
+ *
+ * return:
+ * - void
+ */
+void psg_init()
+{
+// __INTELLISENSE__ 判定は vscode で非標準インラインアセンブル構文をエラーにしないように挿入
+#ifndef __INTELLISENSE__
+#asm
+    CALL    $0090       ; CALL GICINI
+#endasm
+#endif
+}
+
+/*
+ * PSGレジスタ書き込み
+ *
+ * args:
+ * - reg            uint8_t     レジスタ番号
+ * - dat            uint8_t     データ
+ *
+ * return:
+ * - void
+ */
+void psg_write(uint8_t reg, uint8_t dat)
+{
+// __INTELLISENSE__ 判定は vscode で非標準インラインアセンブル構文をエラーにしないように挿入
+#ifndef __INTELLISENSE__
+#asm
+    LD      HL , 2      ;
+    ADD     HL, SP      ; skip over return address on stack
+    LD      E, (HL)     ; WRTPSG(E)
+    INC     HL          ; skip value call stack
+    INC     HL          ;
+    LD      A,(HL)      ; WRTPSG(A)
+    CALL    $0093       ; call WRTPSG(A, E)
+#endasm
+#endif
+}
+
+/*
  * ゲーム状態変更
  *
  * args:
- * - game_state_t    state       ゲーム状態
+ * - game_state_t   state       ゲーム状態
  *
  * return:
  * - void
@@ -102,7 +165,7 @@ void change_game_state(game_state_t s)
  * return:
  * - void
  */
-void offscr_clear()__z88dk_fastcall
+void offscr_clear()
 {
     for (uint16_t i = 0; i < OFFSCR_SIZE; i++) {
         offScreen[i] = CHR_SPACE;
@@ -168,7 +231,7 @@ void offscr_putTextRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, char* text)
  * return:
  * - void
  */
-void lcd_clear()__z88dk_fastcall
+void lcd_clear()
 {
     for (uint8_t i = 0; i < 10; i++) {
         lcdData[i] = LCD_SPACE;
@@ -181,15 +244,16 @@ void lcd_clear()__z88dk_fastcall
  *
  * args:
  * - text           char*       表示テキストのアドレス、または配列
+ * - pos            uint8_t     設定開始位置
  *
  * return:
  * - void
  */
-void lcd_setText(char* text)__z88dk_fastcall
+void lcd_setText(char* text, uint8_t pos)
 {
     char v;
 
-    for (uint8_t i = 0; i < 10; i++) {
+    for (uint8_t i = 0; i < strlen(text); i++) {
         v = text[i];
 
         // 文字データの場合は、LCDデータに変換
@@ -207,8 +271,42 @@ void lcd_setText(char* text)__z88dk_fastcall
                 // 上記以外は空白として15番目のパターンを設定
                 v = LCD_SPACE;
             }
-            lcdData[i] = v;
+            lcdData[i + pos] = v;
         }
+    }
+}
+
+/*
+ * LCDデータに数値を設定
+ * - 整数のみ対応
+ * - 指定桁数以上の値は切捨て
+ *
+ * args:
+ * - val            uint16_t    変換する数値
+ * - pos            uint8_t     設定開始位置
+ * - len            uint8_t     桁数
+ *
+ * return:
+ * - void
+ *
+ */
+void lcd_setNumber(uint16_t val, uint8_t pos, uint8_t len)
+{
+    int i = 0;
+    uint8_t num[10];
+
+    // 数値を文字列に変換
+    // 下の桁から設定するため、ここの結果は逆順になる
+    do {
+        num[i++] = val % 10; // + '0';
+    } while ((val /= 10) > 0 && i < len); // (val = val / 10)の結果が0より大きい場合は繰り返す
+
+    // 表示開始位置補正
+    pos = pos + (len - i);
+
+    // 文字列を逆順にLCDデータに設定
+    for (int j = pos; i > 0; i--) {
+        lcdData[j++] = num[i - 1];
     }
 }
 
@@ -221,7 +319,7 @@ void lcd_setText(char* text)__z88dk_fastcall
  * return:
  * - void
  */
-void lcd_update()__z88dk_fastcall
+void lcd_update()
 {
     uint16_t offscr_p0 = 10 * OFFSCR_WIDTH + 11;
     uint16_t offscr_p1 = 11 * OFFSCR_WIDTH + 11;
@@ -244,29 +342,24 @@ void lcd_update()__z88dk_fastcall
  */
 void game_draw()
 {
-    // VSYNC処理が許可されていないときは処理を抜ける
-    if (!vsync_exec) {
-        return;
+#ifndef __INTELLISENSE__
+#asm
+    EXX
+#endasm;
+#endif
+    // VSYNC処理が許可されているときだけ処理する
+    if (vsync_exec) {
+        // パターンネームテーブル更新
+        vwrite(offScreen, VRAM_PTN_NAME_TBL, VRAM_PTN_NAME_SIZE);
+        // VSYNC処理不許可にする
+        vsync_exec = false;
     }
 
-    #ifndef __INTELLISENSE__
-    __asm
+#ifndef __INTELLISENSE__
+#asm
     EXX
-    __endasm;
-    #endif
-
-    // パターンネームテーブル更新
-    // アセンブラのブロック転送で書いた方が速い
-    vwrite(offScreen, VRAM_PTN_NAME_TBL, VRAM_PTN_NAME_SIZE);
-
-    #ifndef __INTELLISENSE__
-    __asm
-    EXX
-    __endasm;
-    #endif
-
-    // VSYNC処理不許可にして終了
-    vsync_exec = false;
+#endasm;
+#endif
 }
 
 /*+
@@ -278,12 +371,18 @@ void game_draw()
  * return:
  * - void
  */
-void game_init()__z88dk_fastcall
+void game_init()
 {
+    // 割り込み処理不許可
+    vsync_exec = false;
+
     // 画面初期化
     set_color(15, 1, 1);
     set_mangled_mode();
     msx_set_sprite_mode(sprite_large);
+
+    // キークリックスイッチOFF
+    *(uint8_t *)MSX_CLIKSW = 0;
 
     // パターンジェネレータテーブル設定
     vwrite(BANK_PATTERN_0, VRAM_PTN_GENR_TBL1, VRAM_PTN_GENR_SIZE);
@@ -295,31 +394,39 @@ void game_init()__z88dk_fastcall
     vwrite(BANK_COLOR_0, VRAM_COLOR_TBL2, VRAM_COLOR_SIZE);
     vwrite(BANK_COLOR_0, VRAM_COLOR_TBL3, VRAM_COLOR_SIZE);
 
+    // PSG初期化
+    psg_init();
+
+    // PSGレジスタの初期設定
+    psg_write( 7, 0xB8);            // R#7  : ミキシング
+    psg_write( 8, 0x10);            // R#8  : チャンネルA音量
+    psg_write( 9, 0x00);            // R#9  : チャンネルB音量
+    psg_write(10, 0x00);            // R#10 : チャンネルC音量
+
     // サウンドドライバ初期化
 //    sounddrv_init();
 
     // H.TIMIフック設定
-    #ifndef __INTELLISENSE__
-    __asm
+#ifndef __INTELLISENSE__
+#asm
     DI
-    __endasm;
+#endasm;
     #endif
     uint8_t *h_timi = (uint8_t *)MSX_H_TIMI;
     uint16_t hook_addr = (uint16_t)&game_draw;
     h_timi[0] = 0xc3; // JP
     h_timi[1] = (uint8_t)(hook_addr & 0xff);
     h_timi[2] = (uint8_t)((hook_addr & 0xff00) >> 8);
-    #ifndef __INTELLISENSE__
-    __asm
+#ifndef __INTELLISENSE__
+#asm
     EI
-    __endasm;
-    #endif
-
-    vsync_exec = false;
+#endasm;
+#endif
 
     // 画面の基本部分を描画
     offscr_putTextRect(10, 8, 12, 6, mainScreenData);
     offscr_putTextRect(10,19, 12, 2, controlGuideData);
+    offscr_putTextLn(23, 0, "./250301");
 
     change_game_state(STATE_OVER);
 }
@@ -333,13 +440,32 @@ void game_init()__z88dk_fastcall
  * return:
  * - void
  */
-void game_start()__z88dk_fastcall
+void game_start()
 {
     if (game_tick == 1) {
         lcd_clear();
+        lcd_setNumber(game_round, 0, 3);
+        lcd_setText("-", 3);
+        lcd_setNumber(game_score, 4, 6);
         lcd_update();
+    } else if (game_tick > 120) {
+        lcd_clear();
+        for (int i = 0; i < 6; i++) {
+            enemy_line[i] = 0;
+        }
+        player_number = 1;
+        player_shot_left = 30;
+        input_flag = false;
+        enemy_summary = 0;
+        enemy_left = 16;
+        enemy_ufo_flg = false;
+        enemy_wait_cnt = 254;
+        enemy_wait_time = 120 - game_round * 5;
+        if (enemy_wait_time < 60) {
+            enemy_wait_time = 60;
+        }
+        change_game_state(STATE_GAME);
     }
-    change_game_state(STATE_GAME);
 }
 
 /*
@@ -351,8 +477,56 @@ void game_start()__z88dk_fastcall
  * return:
  * - void
  */
-void game_main_shot()__z88dk_fastcall
+void game_main_player_shot()
 {
+    bool_t hit;
+    int hit_idx = 0;
+    int check_cnt = 0;
+
+    if (player_shot_left == 0) {
+        // 弾切れ
+        // Todo : サウンドを鳴らす
+        return;
+    }
+    player_shot_left--;
+
+    for (int i = 0; i < 6; i++) {
+        if (enemy_line[i] == player_number) {
+            enemy_line[i] = 0;
+            hit_idx = i + 1;
+            break;
+        }
+    }
+    if (hit_idx == 0) {
+        // はずれ
+        // Todo : サウンドを鳴らす
+        return;
+    }
+    // スコア加算
+    // Todo : サウンドを鳴らす
+    game_score = game_score + ((player_number == 11) ? 300 : 10);
+    // 敵を詰める
+    hit_idx--;
+    if (hit_idx > 0) {
+        for (int i = hit_idx; i > 0; i--) {
+            enemy_line[i] = enemy_line[i - 1];
+            enemy_line[i - 1] = 0;
+        }
+    }
+    // 敵表示数チェック
+    for (int i = 0; i < 6; i++) {
+        check_cnt += enemy_line[i];
+    }
+    if (player_number > 1 && player_number < 11) {
+        enemy_summary += player_number - 1;
+        if (enemy_summary % 10 == 0 && enemy_summary > 0) {
+            enemy_ufo_flg = true;
+        }
+    }
+    if (enemy_left == 0 && check_cnt == 0) {
+        // 敵残数と表示数がゼロならクリア
+        change_game_state(STATE_CLEAR);
+    }
 }
 
 /*
@@ -364,20 +538,24 @@ void game_main_shot()__z88dk_fastcall
  * return:
  * - void
  */
-void game_main_player()__z88dk_fastcall
+void game_main_player()
 {
+    // 入力情報取得
     buff_stick = get_stick(0);
 
-    // 左入力で数字変更
     if (buff_stick == STICK_NONE) {
+        // 未入力の時は入力フラグをfalseにする
         input_flag = false;
-    }
-    else if (buff_stick == STICK_LEFT && !input_flag) {
+    } else if (buff_stick == STICK_LEFT && !input_flag) {
         input_flag = true;
+        // 左入力で数字変更（0～9、n）
         player_number++;
-        if (player_number > 10) {
+        if (player_number > 11) {
             player_number = 1;
         }
+    } else if (buff_stick == STICK_RIGHT && !input_flag) {
+        input_flag = true;
+        game_main_player_shot();
     }
 }
 
@@ -390,10 +568,35 @@ void game_main_player()__z88dk_fastcall
  * return:
  * - void
  */
-void game_main_enemy()__z88dk_fastcall
+void game_main_enemy()
 {
-    // 仮実装：LCDデータをランダムで更新
-    enemy_line[get_rnd() % 6] = get_rnd() % 10 + 1;
+    // 敵出現待ちの時は処理を抜ける
+    if (enemy_wait_cnt++ < enemy_wait_time) {
+        return;
+    }
+    enemy_wait_cnt = 0;             // ウェイトカウンタリセット
+    // 既に一番左に敵がいたらミス
+    if (enemy_line[0] > 0) {
+        change_game_state(STATE_MISS);
+        return;
+    }
+    // 全体を左にシフト
+    for (int i = 0; i < 5; i++) {
+        enemy_line[i] = enemy_line[i + 1];
+    }
+    if (enemy_left > 0) {
+        enemy_left--;               // 敵残数デクリメント
+        if (enemy_ufo_flg) {
+            // UFO出現
+            enemy_ufo_flg = false;
+            enemy_line[5] = 11;
+        } else {
+            // 敵出現
+            enemy_line[5] = get_rnd() % 10 + 1;
+        }
+    } else {
+        enemy_line[5] = 0;
+    }
 }
 
 /*
@@ -405,7 +608,7 @@ void game_main_enemy()__z88dk_fastcall
  * return:
  * - void
  */
-void game_main_updateLCDData()__z88dk_fastcall
+void game_main_updateLCDData()
 {
     lcdData[1] = player_number - 1;     // プレイヤー
     lcdData[2] = player_left + 11;      // 残機数
@@ -428,7 +631,7 @@ void game_main_updateLCDData()__z88dk_fastcall
  * return:
  * - void
  */
-void game_main()__z88dk_fastcall
+void game_main()
 {
     game_main_player();
     game_main_enemy();
@@ -444,8 +647,13 @@ void game_main()__z88dk_fastcall
  * return:
  * - void
  */
-void game_clear()__z88dk_fastcall
+void game_clear()
 {
+    if (game_tick == 1) {
+        // Todo : サウンドを鳴らす
+        game_round++;
+        change_game_state(STATE_START);
+    }
 }
 
 /*
@@ -457,8 +665,36 @@ void game_clear()__z88dk_fastcall
  * return:
  * - void
  */
-void game_miss()__z88dk_fastcall
+void game_miss()
 {
+    if (game_tick == 1) {
+        // Todo : サウンドを鳴らす
+        player_left--;
+        if (player_left == 0) {
+            change_game_state(STATE_OVER);
+        } else {
+            // LCD表示
+            lcd_clear();
+            lcd_setNumber(game_round, 0, 3);
+            lcd_setText("-", 3);
+            lcd_setNumber(game_score, 4, 6);
+            lcd_update();
+        }
+    } else if (game_tick > 120) {
+        // 画面上に残った敵を残りに加える
+        for (int i = 0; i < 6; i++) {
+            if (enemy_line[i] > 0) {
+                enemy_left++;
+            }
+            enemy_line[i] = 0;
+        }
+        lcd_clear();
+        player_number = 1;
+        input_flag = false;
+        enemy_summary = 0;
+        enemy_wait_cnt = 254;
+        change_game_state(STATE_GAME);
+    }
 }
 
 /*
@@ -470,22 +706,22 @@ void game_miss()__z88dk_fastcall
  * return:
  * - void
  */
-void game_over()__z88dk_fastcall
+void game_over()
 {
-
     if (game_tick == 1) {
         // メッセージ表示
         offscr_putTextLn(11,  6, "GAME  OVER");
         offscr_putTextLn(11, 15, "PUSH SPACE");
         // LCD表示
         lcd_clear();
-        char v[10];
-        sprintf(v, "%3d-%6d", game_round, game_score);
-        lcd_setText(v);
+        lcd_setNumber(game_round, 0, 3);
+        lcd_setText("-", 3);
+        lcd_setNumber(game_score, 4, 6);
         lcd_update();
     }
 
-    buff_trigger = get_trigger(0);
+    buff_trigger = get_trigger(0);      // トリガ情報取得
+    int rnd = get_rnd();                // 乱数を発行してパターンを変える
 
     if (buff_trigger != 0) {
         // メッセージ消去
@@ -509,7 +745,7 @@ void game_over()__z88dk_fastcall
  * return:
  * - void
  */
-void game_update()__z88dk_fastcall
+void game_update()
 {
     // ゲーム経過時間更新
     game_tick++;

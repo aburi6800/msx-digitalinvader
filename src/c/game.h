@@ -18,6 +18,30 @@ typedef enum {
 
 
 /*
+ * PSGレジスタ初期化
+ *
+ * args:
+ * - reg            uint8_t     レジスタ番号
+ * - dat            uint8_t     データ
+ *
+ * return:
+ * - void
+ */
+void psg_init();
+
+/*
+ * PSGレジスタ書き込み
+ *
+ * args:
+ * - reg            uint8_t     レジスタ番号
+ * - dat            uint8_t     データ
+ *
+ * return:
+ * - void
+ */
+void psg_write(uint8_t reg, uint8_t dat);
+
+/*
  * ゲーム状態変更
  *
  * args:
@@ -37,7 +61,7 @@ void change_game_state(game_state_t s);
  * return:
  * - void
  */
-void offscr_clear()__z88dk_fastcall;
+void offscr_clear();
 
 /*
  * オフスクリーン書き込み
@@ -81,18 +105,36 @@ void offscr_putTextRect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, char* text);
  * return:
  * - void
  */
-void lcd_clear()__z88dk_fastcall;
+void lcd_clear();
 
 /*
  * LCDに文字列データ設定
+ * - 表示可能な文字以外は空白とする
  *
  * args:
  * - text           char*       表示テキストのアドレス、または配列
+ * - pos            uint8_t     設定開始位置
  *
  * return:
  * - void
  */
-void lcd_setText(char* text)__z88dk_fastcall;
+void lcd_setText(char* text, uint8_t pos);
+
+/*
+ * LCDデータに数値を設定
+ * - 整数のみ対応
+ * - 指定桁数以上の値は切捨て
+ *
+ * args:
+ * - val            uint16_t    変換する数値
+ * - pos            uint8_t     設定開始位置
+ * - len            uint8_t     桁数
+ *
+ * return:
+ * - void
+ *
+ */
+void lcd_setNumber(uint16_t val, uint8_t pos, uint8_t len);
 
 /*
  * LCDデータをオフスクリーンへ書き込む
@@ -103,7 +145,7 @@ void lcd_setText(char* text)__z88dk_fastcall;
  * return:
  * - void
  */
-void lcd_update()__z88dk_fastcall;
+void lcd_update();
 
 /*
  * ゲーム画面描画
@@ -126,7 +168,7 @@ void game_draw();
  * return:
  * - void
  */
-void game_init()__z88dk_fastcall;
+void game_init();
 
 /*
  * ゲーム処理
@@ -137,7 +179,7 @@ void game_init()__z88dk_fastcall;
  * return:
  * - void
  */
-void game_update()__z88dk_fastcall;
+void game_update();
 
 /*
  * ゲーム開始処理
@@ -148,7 +190,7 @@ void game_update()__z88dk_fastcall;
  * return:
  * - void
  */
-void game_start()__z88dk_fastcall;
+void game_start();
 
 /*
  * ゲームメイン／ショット処理
@@ -159,7 +201,7 @@ void game_start()__z88dk_fastcall;
  * return:
  * - void
  */
-void game_main_shot()__z88dk_fastcall;
+void game_main_player_shot();
 
 /*
  * ゲームメイン／プレイヤー処理
@@ -170,7 +212,7 @@ void game_main_shot()__z88dk_fastcall;
  * return:
  * - void
  */
-void game_main_player()__z88dk_fastcall;
+void game_main_player();
 
 /*
  * ゲームメイン／エネミー処理
@@ -181,7 +223,7 @@ void game_main_player()__z88dk_fastcall;
  * return:
  * - void
  */
-void game_main_enemy()__z88dk_fastcall;
+void game_main_enemy();
 
 /*
  * ゲームメイン／LCDデータ更新処理
@@ -192,7 +234,7 @@ void game_main_enemy()__z88dk_fastcall;
  * return:
  * - void
  */
-void game_main_updateLCDData()__z88dk_fastcall;
+void game_main_updateLCDData();
 
 /*
  * ゲームクリア処理
@@ -203,7 +245,7 @@ void game_main_updateLCDData()__z88dk_fastcall;
  * return:
  * - void
  */
-void game_clear()__z88dk_fastcall;
+void game_clear();
 
 /*
  * ゲームミス処理
@@ -214,7 +256,7 @@ void game_clear()__z88dk_fastcall;
  * return:
  * - void
  */
-void game_miss()__z88dk_fastcall;
+void game_miss();
 
 /*
  * ゲームオーバー処理
@@ -225,7 +267,7 @@ void game_miss()__z88dk_fastcall;
  * return:
  * - void
  */
-void game_over()__z88dk_fastcall;
+void game_over();
 
 /*
  * ゲームメイン処理
@@ -236,6 +278,6 @@ void game_over()__z88dk_fastcall;
  * return:
  * - void
  */
-void game_main()__z88dk_fastcall;
+void game_main();
 
 #endif
