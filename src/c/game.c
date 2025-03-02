@@ -466,10 +466,6 @@ void game_start()
         enemy_left = 16;
         enemy_ufo_flg = false;
         enemy_wait_cnt = 254;
-        enemy_wait_time = 120 - game_round * 5;
-        if (enemy_wait_time < 60) {
-            enemy_wait_time = 60;
-        }
         change_game_state(STATE_GAME);
     }
 }
@@ -698,6 +694,10 @@ void game_clear()
         psg_write( 8, 0x00);                // R#8  : チャンネルA音量
         sound_time = 10;
     } else if (game_tick > 60) {
+        enemy_wait_time = enemy_wait_time - game_round * 5;
+        if (enemy_wait_time < 40) {
+            enemy_wait_time = 40;
+        }
         game_round++;
         change_game_state(STATE_START);
     }
@@ -786,6 +786,7 @@ void game_over()
         game_round = 1;
         game_score = 0;
         player_left = 3;
+        enemy_wait_time = 120;
         // ゲームスタート処理に遷移
         change_game_state(STATE_START);
     }
