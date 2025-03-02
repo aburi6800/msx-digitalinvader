@@ -6,7 +6,6 @@
 #include "const.h"
 #include "game.h"
 
-
 // pcgdata.asm : BANK_PATTERN_0への参照
 extern uint8_t BANK_PATTERN_0[];
 
@@ -15,6 +14,15 @@ extern uint8_t BANK_COLOR_0[];
 
 // 仮想画面
 uint8_t offScreen[OFFSCR_SIZE];
+
+// ゲーム状態
+typedef enum {
+    STATE_START,
+    STATE_GAME,
+    STATE_CLEAR,
+    STATE_MISS,
+    STATE_OVER
+} game_state_t;
 
 // ゲーム画面
 char mainScreenData[] = {
@@ -41,6 +49,9 @@ char lcdPtn1[16] = {'p', 'q', 'r', 's', 't', 's', 'u', 'q', 'u', 's', 'v', 'y', 
 // LCDデータ
 uint8_t lcdData[10] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15};
 
+// サウンド再生時間
+uint16_t sound_time = 0;
+
 // 入力バッファ（方向）
 uint8_t buff_stick = 0;
 
@@ -55,6 +66,12 @@ uint8_t game_round = 0;
 
 // スコア
 uint16_t game_score = 0;
+
+// ゲームの状態
+game_state_t game_state;
+
+// ゲーム経過時間
+uint16_t game_tick = 0;
 
 // プレイヤーの数字
 // 内部的には、表示する値+1を保持
@@ -84,12 +101,6 @@ uint8_t enemy_summary = 0;
 
 // UFO発生フラグ
 bool_t enemy_ufo_flg = false;
-
-// ゲームの状態
-game_state_t game_state;
-
-// ゲーム経過時間
-uint16_t game_tick = 0;
 
 // VSYNC処理実行フラグ
 bool_t vsync_exec = false;
@@ -145,7 +156,7 @@ void psg_write(uint8_t reg, uint8_t dat)
  * ゲーム状態変更
  *
  * args:
- * - game_state_t   state       ゲーム状態
+ * - s              game_state_t ゲーム状態
  *
  * return:
  * - void
@@ -257,22 +268,20 @@ void lcd_setText(char* text, uint8_t pos)
         v = text[i];
 
         // 文字データの場合は、LCDデータに変換
-        if (v > 10) {
-            if (v == CHR_MINUS) {
-                // LCDデータ 45 は '-'として11番目のパターンを設定
-                v = LCD_MINUS;
-            } else if (v >= CHR_0 && v <= CHR_9) {
-                // LCDデータ 48～57 は数値のキャラクターなので、 0～9番目のパターンを設定
-                v = v - 48;
-            } else if (v >= CHR_A && v <= CHR_C) {
-                // LCDデータ 65～67 は残機数のキャラクターなので、12～14番目のパターンを設定
-                v = v - 53;
-            } else {
-                // 上記以外は空白として15番目のパターンを設定
-                v = LCD_SPACE;
-            }
-            lcdData[i + pos] = v;
+        if (v == CHR_MINUS) {
+            // LCDデータ 45 は '-'として11番目のパターンを設定
+            v = LCD_MINUS;
+        } else if (v >= CHR_0 && v <= CHR_9) {
+            // LCDデータ 48～57 は数値のキャラクターなので、 0～9番目のパターンを設定
+            v = v - 48;
+        } else if (v >= CHR_A && v <= CHR_C) {
+            // LCDデータ 65～67 は残機数のキャラクターなので、12～14番目のパターンを設定
+            v = v - 53;
+        } else {
+            // 上記以外は空白として15番目のパターンを設定
+            v = LCD_SPACE;
         }
+        lcdData[i + pos] = v;
     }
 }
 
@@ -398,13 +407,10 @@ void game_init()
     psg_init();
 
     // PSGレジスタの初期設定
-    psg_write( 7, 0xB8);            // R#7  : ミキシング
-    psg_write( 8, 0x10);            // R#8  : チャンネルA音量
-    psg_write( 9, 0x00);            // R#9  : チャンネルB音量
-    psg_write(10, 0x00);            // R#10 : チャンネルC音量
-
-    // サウンドドライバ初期化
-//    sounddrv_init();
+    psg_write( 7, 0xBF);                    // R#7  : ミキシング
+    psg_write( 8, 0x00);                    // R#8  : チャンネルA音量
+    psg_write( 9, 0x00);                    // R#9  : チャンネルB音量
+    psg_write(10, 0x00);                    // R#10 : チャンネルC音量
 
     // H.TIMIフック設定
 #ifndef __INTELLISENSE__
@@ -426,7 +432,7 @@ void game_init()
     // 画面の基本部分を描画
     offscr_putTextRect(10, 8, 12, 6, mainScreenData);
     offscr_putTextRect(10,19, 12, 2, controlGuideData);
-    offscr_putTextLn(23, 0, "./250301");
+    offscr_putTextLn(23, 0, "./250303");
 
     change_game_state(STATE_OVER);
 }
@@ -480,8 +486,8 @@ void game_start()
 void game_main_player_shot()
 {
     bool_t hit;
-    int hit_idx = 0;
-    int check_cnt = 0;
+    int hit_idx;
+    int check_cnt;
 
     if (player_shot_left == 0) {
         // 弾切れ
@@ -490,6 +496,7 @@ void game_main_player_shot()
     }
     player_shot_left--;
 
+    hit_idx = 0;
     for (int i = 0; i < 6; i++) {
         if (enemy_line[i] == player_number) {
             enemy_line[i] = 0;
@@ -499,12 +506,42 @@ void game_main_player_shot()
     }
     if (hit_idx == 0) {
         // はずれ
-        // Todo : サウンドを鳴らす
+        psg_write( 7, 0xB8);                // R#7  : ミキシング
+        psg_write( 8, 0x10);                // R#8  : チャンネルA音量
+        psg_write(13, 0x0C);                // R#13 : エンベロープ波形
+        psg_write(11, 0x0F);                // R#11 : エンベロープ周期（下位8ビット）
+        psg_write(12, 0x00);                // R#12 : エンベロープ周期（上位8ビット）
+        psg_write( 0, 0xAF);                // R#0  : チャンネルAトーン（下位8ビット）
+        psg_write( 1, 0x06);                // R#1  : チャンネルAトーン（上位4ビット）
+        sound_time = 5;
         return;
     }
+
+    // あたり
+    // 効果音再生
+    psg_write( 7, 0xB8);                    // R#7  : ミキシング
+    psg_write( 8, 0x10);                    // R#8  : チャンネルA音量
+    psg_write(13, 0x0C);                    // R#13 : エンベロープ波形
+    psg_write(11, 0x03);                    // R#11 : エンベロープ周期（下位8ビット）
+    psg_write(12, 0x00);                    // R#12 : エンベロープ周期（上位8ビット）
+    psg_write( 0, 0xBE);                    // R#0  : チャンネルAトーン（下位8ビット）
+    psg_write( 1, 0x00);                    // R#1  : チャンネルAトーン（上位4ビット）
+    sound_time = 5;
+
     // スコア加算
-    // Todo : サウンドを鳴らす
     game_score = game_score + ((player_number == 11) ? 300 : 10);
+
+    // 敵表示数チェック
+    check_cnt = 0;
+    for (int i = 0; i < 6; i++) {
+        check_cnt += enemy_line[i];
+    }
+    if (enemy_left < 1 && check_cnt == 0) {
+        // 敵残数と表示数がゼロならクリア
+        change_game_state(STATE_CLEAR);
+        return;
+    }
+
     // 敵を詰める
     hit_idx--;
     if (hit_idx > 0) {
@@ -513,19 +550,14 @@ void game_main_player_shot()
             enemy_line[i - 1] = 0;
         }
     }
-    // 敵表示数チェック
-    for (int i = 0; i < 6; i++) {
-        check_cnt += enemy_line[i];
-    }
+
+    // UFO出現チェック
     if (player_number > 1 && player_number < 11) {
         enemy_summary += player_number - 1;
         if (enemy_summary % 10 == 0 && enemy_summary > 0) {
+            // 倒した敵の数の合計が10の倍数ならUFO出現
             enemy_ufo_flg = true;
         }
-    }
-    if (enemy_left == 0 && check_cnt == 0) {
-        // 敵残数と表示数がゼロならクリア
-        change_game_state(STATE_CLEAR);
     }
 }
 
@@ -554,6 +586,7 @@ void game_main_player()
             player_number = 1;
         }
     } else if (buff_stick == STICK_RIGHT && !input_flag) {
+        // 右入力でショット
         input_flag = true;
         game_main_player_shot();
     }
@@ -574,7 +607,8 @@ void game_main_enemy()
     if (enemy_wait_cnt++ < enemy_wait_time) {
         return;
     }
-    enemy_wait_cnt = 0;             // ウェイトカウンタリセット
+    // ウェイトカウンタリセット
+    enemy_wait_cnt = 0;
     // 既に一番左に敵がいたらミス
     if (enemy_line[0] > 0) {
         change_game_state(STATE_MISS);
@@ -585,7 +619,8 @@ void game_main_enemy()
         enemy_line[i] = enemy_line[i + 1];
     }
     if (enemy_left > 0) {
-        enemy_left--;               // 敵残数デクリメント
+        // 敵残数デクリメント
+        enemy_left--;
         if (enemy_ufo_flg) {
             // UFO出現
             enemy_ufo_flg = false;
@@ -595,6 +630,7 @@ void game_main_enemy()
             enemy_line[5] = get_rnd() % 10 + 1;
         }
     } else {
+        // 敵残数ゼロなら何も表示しない
         enemy_line[5] = 0;
     }
 }
@@ -610,9 +646,9 @@ void game_main_enemy()
  */
 void game_main_updateLCDData()
 {
-    lcdData[1] = player_number - 1;     // プレイヤー
-    lcdData[2] = player_left + 11;      // 残機数
-    for (int i = 0; i < 6; i++) {       // 敵
+    lcdData[1] = player_number - 1;         // プレイヤー
+    lcdData[2] = player_left + 11;          // 残機数
+    for (int i = 0; i < 6; i++) {           // 敵
         if (enemy_line[i] == 0) {
             lcdData[i + 3] = LCD_SPACE;
         } else {
@@ -649,8 +685,19 @@ void game_main()
  */
 void game_clear()
 {
-    if (game_tick == 1) {
-        // Todo : サウンドを鳴らす
+    if (game_tick == 1 || game_tick == 3 || game_tick == 5) {
+        psg_write( 7, 0xB8);                // R#7  : ミキシング
+        psg_write( 8, 0x10);                // R#8  : チャンネルA音量
+        psg_write(13, 0x0C);                // R#13 : エンベロープ波形
+        psg_write(11, 0x02);                // R#11 : エンベロープ周期（下位8ビット）
+        psg_write(12, 0x00);                // R#12 : エンベロープ周期（上位8ビット）
+        psg_write( 0, 0xAA);                // R#0  : チャンネルAトーン（下位8ビット）
+        psg_write( 1, 0x00);                // R#1  : チャンネルAトーン（上位4ビット）
+        sound_time = 10;
+    } else if (game_tick == 2 || game_tick == 4 || game_tick == 6) {
+        psg_write( 8, 0x00);                // R#8  : チャンネルA音量
+        sound_time = 10;
+    } else if (game_tick > 60) {
         game_round++;
         change_game_state(STATE_START);
     }
@@ -668,7 +715,14 @@ void game_clear()
 void game_miss()
 {
     if (game_tick == 1) {
-        // Todo : サウンドを鳴らす
+        psg_write( 7, 0xBF);                // R#7  : ミキシング
+        psg_write( 8, 0x10);                // R#8  : チャンネルA音量
+        psg_write(13, 0x0C);                // R#13 : エンベロープ波形
+        psg_write(11, 0x03);                // R#11 : エンベロープ周期（下位8ビット）
+        psg_write(12, 0x00);                // R#12 : エンベロープ周期（上位8ビット）
+        psg_write( 0, 0x7D);                // R#0  : チャンネルAトーン（下位8ビット）
+        psg_write( 1, 0x01);                // R#1  : チャンネルAトーン（上位4ビット）
+        sound_time = 20;
         player_left--;
         if (player_left == 0) {
             change_game_state(STATE_OVER);
@@ -680,7 +734,7 @@ void game_miss()
             lcd_setNumber(game_score, 4, 6);
             lcd_update();
         }
-    } else if (game_tick > 120) {
+    } else if (game_tick > 100) {
         // 画面上に残った敵を残りに加える
         for (int i = 0; i < 6; i++) {
             if (enemy_line[i] > 0) {
@@ -693,6 +747,7 @@ void game_miss()
         input_flag = false;
         enemy_summary = 0;
         enemy_wait_cnt = 254;
+        sound_time = 0;
         change_game_state(STATE_GAME);
     }
 }
@@ -720,8 +775,8 @@ void game_over()
         lcd_update();
     }
 
-    buff_trigger = get_trigger(0);      // トリガ情報取得
-    int rnd = get_rnd();                // 乱数を発行してパターンを変える
+    buff_trigger = get_trigger(0);          // トリガ情報取得
+    int rnd = get_rnd();                    // 乱数を発行してパターンを変える
 
     if (buff_trigger != 0) {
         // メッセージ消去
@@ -747,25 +802,33 @@ void game_over()
  */
 void game_update()
 {
-    // ゲーム経過時間更新
-    game_tick++;
-
-    switch (game_state) {
-        case STATE_START:
-            game_start();
-            break;
-        case STATE_GAME:
-            game_main();
-            break;
-        case STATE_CLEAR:
-            game_clear();
-            break;
-        case STATE_MISS:
-            game_miss();
-            break;
-        case STATE_OVER:
-            game_over();
-            break;
+    if (sound_time > 0) {
+        if (--sound_time < 1) {
+            // 効果音停止
+            psg_write( 7, 0x7F);            // R#7  : ミキシング
+            psg_write( 8, 0x00);            // R#8  : チャンネルA音量
+            psg_write( 9, 0x00);            // R#9  : チャンネルB音量
+            psg_write(10, 0x00);            // R#10 : チャンネルC音量
+        }
+    } else {
+        game_tick++;
+        switch (game_state) {
+            case STATE_START:
+                game_start();
+                break;
+            case STATE_GAME:
+                game_main();
+                break;
+            case STATE_CLEAR:
+                game_clear();
+                break;
+            case STATE_MISS:
+                game_miss();
+                break;
+            case STATE_OVER:
+                game_over();
+                break;
+        }
     }
 
     // vsync処理を許可し、終了を待つ
