@@ -432,7 +432,7 @@ void game_init()
     // 画面の基本部分を描画
     offscr_putTextRect(10, 8, 12, 6, mainScreenData);
     offscr_putTextRect(10,19, 12, 2, controlGuideData);
-    offscr_putTextLn(23, 0, "./250303");
+    offscr_putTextLn(22, 0, "./250302-2");
 
     change_game_state(STATE_OVER);
 }
@@ -485,12 +485,11 @@ void game_main_player_shot()
     int hit_idx;
     int check_cnt;
 
-    if (player_shot_left == 0) {
-        // 弾切れ
-        // Todo : サウンドを鳴らす
+    if (--player_shot_left == 0) {
+        // 弾切れしたらゲームオーバー
+        change_game_state(STATE_OVER);
         return;
     }
-    player_shot_left--;
 
     hit_idx = 0;
     for (int i = 0; i < 6; i++) {
