@@ -38,7 +38,8 @@
 - When you press the FIRE key, a digital invader with the same number as you is shot down. If there is a digital invader with the same number, press the key again.
 - There are 16 digital invaders attacking in one round. The beam cannon can be used 30 times.
 - When the total number of erased numbers is a multiple of 10, a UFO("n") appears.If you shoot it down, you will get a bonus of 300pts.
-- When invaded by digital invaders, the player loses one life. The game is over when the number of lives reaches zero.
+- When invaded by digital invaders, the player loses one life.
+- The game is over when the life reaches zero or all 30 beam cannons are used up in one round.
 
 <br>
 
