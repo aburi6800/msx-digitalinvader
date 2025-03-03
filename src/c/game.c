@@ -12,9 +12,6 @@ extern uint8_t BANK_PATTERN_0[];
 // pcgdata.asm : BANK_COLOR_0への参照
 extern uint8_t BANK_COLOR_0[];
 
-// 仮想画面
-uint8_t offScreen[OFFSCR_SIZE];
-
 // ゲーム状態
 typedef enum {
     STATE_START,
@@ -23,6 +20,23 @@ typedef enum {
     STATE_MISS,
     STATE_OVER
 } game_state_t;
+
+// サウンドデータ
+uint8_t sound_data[5][16] = {
+    // 停止（初期化）
+    { 0x07, 0xBF, 0x08, 0x00, 0x09, 0x00, 0x0A, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+    // アタリ
+    { 0x07, 0xB8, 0x08, 0x10, 0x0D, 0x0C, 0x0B, 0x03, 0x0C, 0x00, 0x00, 0xBE, 0x01, 0x00, 0xFF, 0xFF},
+    // クリア
+    { 0x07, 0xB8, 0x08, 0x10, 0x0D, 0x0C, 0x0B, 0x02, 0x0C, 0x00, 0x00, 0xAA, 0x01, 0x00, 0xFF, 0xFF},
+    // ハズレ
+    { 0x07, 0xB8, 0x08, 0x10, 0x0D, 0x0C, 0x0B, 0x0F, 0x0C, 0x00, 0x00, 0xAF, 0x01, 0x06, 0xFF, 0xFF},
+    // ミス
+    { 0x07, 0xBF, 0x08, 0x10, 0x0D, 0x0C, 0x0B, 0x03, 0x0C, 0x00, 0x00, 0x7D, 0x01, 0x01, 0xFF, 0xFF}
+};
+
+// 仮想画面
+uint8_t offScreen[OFFSCR_SIZE];
 
 // ゲーム画面
 char mainScreenData[] = {
@@ -150,6 +164,22 @@ void psg_write(uint8_t reg, uint8_t dat)
     CALL    $0093       ; call WRTPSG(A, E)
 #endasm
 #endif
+}
+
+/*
+ * サウンド発声処理
+ *
+ * args:
+ * - sound_data     uint8_t     sound_data配列
+ *
+ * return:
+ * - void
+ */
+void play_sound(uint8_t sound_no) {
+    int i = 0;
+    while (sound_data[sound_no][i] != 0xFF) {
+        psg_write( sound_data[sound_no][i++], sound_data[sound_no][i++]);
+    }
 }
 
 /*
@@ -407,10 +437,7 @@ void game_init()
     psg_init();
 
     // PSGレジスタの初期設定
-    psg_write( 7, 0xBF);                    // R#7  : ミキシング
-    psg_write( 8, 0x00);                    // R#8  : チャンネルA音量
-    psg_write( 9, 0x00);                    // R#9  : チャンネルB音量
-    psg_write(10, 0x00);                    // R#10 : チャンネルC音量
+    play_sound(SOUND_STOP);
 
     // H.TIMIフック設定
 #ifndef __INTELLISENSE__
@@ -432,7 +459,7 @@ void game_init()
     // 画面の基本部分を描画
     offscr_putTextRect(10, 8, 12, 6, mainScreenData);
     offscr_putTextRect(10,19, 12, 2, controlGuideData);
-    offscr_putTextLn(24, 0, "./250303");
+    offscr_putTextLn(22, 0, "./250303-2");
 
     change_game_state(STATE_OVER);
 }
@@ -509,26 +536,14 @@ void game_main_player_shot()
     }
     if (hit_idx == 0) {
         // はずれ
-        psg_write( 7, 0xB8);                // R#7  : ミキシング
-        psg_write( 8, 0x10);                // R#8  : チャンネルA音量
-        psg_write(13, 0x0C);                // R#13 : エンベロープ波形
-        psg_write(11, 0x0F);                // R#11 : エンベロープ周期（下位8ビット）
-        psg_write(12, 0x00);                // R#12 : エンベロープ周期（上位8ビット）
-        psg_write( 0, 0xAF);                // R#0  : チャンネルAトーン（下位8ビット）
-        psg_write( 1, 0x06);                // R#1  : チャンネルAトーン（上位4ビット）
+        play_sound(SOUND_FAIL);
         sound_time = 5;
         return;
     }
 
     // あたり
     // 効果音再生
-    psg_write( 7, 0xB8);                    // R#7  : ミキシング
-    psg_write( 8, 0x10);                    // R#8  : チャンネルA音量
-    psg_write(13, 0x0C);                    // R#13 : エンベロープ波形
-    psg_write(11, 0x03);                    // R#11 : エンベロープ周期（下位8ビット）
-    psg_write(12, 0x00);                    // R#12 : エンベロープ周期（上位8ビット）
-    psg_write( 0, 0xBE);                    // R#0  : チャンネルAトーン（下位8ビット）
-    psg_write( 1, 0x00);                    // R#1  : チャンネルAトーン（上位4ビット）
+    play_sound(SOUND_HIT);
     sound_time = 5;
 
     // スコア加算
@@ -689,16 +704,10 @@ void game_main()
 void game_clear()
 {
     if (game_tick == 1 || game_tick == 3 || game_tick == 5) {
-        psg_write( 7, 0xB8);                // R#7  : ミキシング
-        psg_write( 8, 0x10);                // R#8  : チャンネルA音量
-        psg_write(13, 0x0C);                // R#13 : エンベロープ波形
-        psg_write(11, 0x02);                // R#11 : エンベロープ周期（下位8ビット）
-        psg_write(12, 0x00);                // R#12 : エンベロープ周期（上位8ビット）
-        psg_write( 0, 0xAA);                // R#0  : チャンネルAトーン（下位8ビット）
-        psg_write( 1, 0x00);                // R#1  : チャンネルAトーン（上位4ビット）
+        play_sound(SOUND_CLEAR);
         sound_time = 10;
     } else if (game_tick == 2 || game_tick == 4 || game_tick == 6) {
-        psg_write( 8, 0x00);                // R#8  : チャンネルA音量
+        play_sound(SOUND_STOP);
         sound_time = 10;
     } else if (game_tick > 60) {
         enemy_wait_time = enemy_wait_time - 5;
@@ -722,13 +731,7 @@ void game_clear()
 void game_miss()
 {
     if (game_tick == 1) {
-        psg_write( 7, 0xBF);                // R#7  : ミキシング
-        psg_write( 8, 0x10);                // R#8  : チャンネルA音量
-        psg_write(13, 0x0C);                // R#13 : エンベロープ波形
-        psg_write(11, 0x03);                // R#11 : エンベロープ周期（下位8ビット）
-        psg_write(12, 0x00);                // R#12 : エンベロープ周期（上位8ビット）
-        psg_write( 0, 0x7D);                // R#0  : チャンネルAトーン（下位8ビット）
-        psg_write( 1, 0x01);                // R#1  : チャンネルAトーン（上位4ビット）
+        play_sound(SOUND_MISS);
         sound_time = 20;
         player_left--;
         if (player_left == 0) {
@@ -813,10 +816,7 @@ void game_update()
     if (sound_time > 0) {
         if (--sound_time < 1) {
             // 効果音停止
-            psg_write( 7, 0x7F);            // R#7  : ミキシング
-            psg_write( 8, 0x00);            // R#8  : チャンネルA音量
-            psg_write( 9, 0x00);            // R#9  : チャンネルB音量
-            psg_write(10, 0x00);            // R#10 : チャンネルC音量
+            play_sound(SOUND_STOP);
         }
     } else {
         game_tick++;

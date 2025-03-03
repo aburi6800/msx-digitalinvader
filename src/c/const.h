@@ -25,9 +25,14 @@
 #define VRAM_WIDTH          32      // 画面幅
 #define VRAM_HEIGHT         24      // 画面高さ
 
-// MIS BIOS
+// MSX BIOS
 #define MSX_H_TIMI          0xfd9f  // H.TIMI割り込みフックアドレス
 #define MSX_CLIKSW          0xf3db  // キークリックスイッチ
+
+// 仮想画面バッファの定義
+#define OFFSCR_WIDTH        32
+#define OFFSCR_HEIGHT       24
+#define OFFSCR_SIZE         OFFSCR_WIDTH * OFFSCR_HEIGHT
 
 // LCDデータ定数
 #define LCD_MINUS           11
@@ -55,9 +60,11 @@
 // TRIGGER定数
 #define TRIGGER_SPACE       255
 
-// 仮想画面バッファの定義
-#define OFFSCR_WIDTH        32
-#define OFFSCR_HEIGHT       24
-#define OFFSCR_SIZE         OFFSCR_WIDTH * OFFSCR_HEIGHT
+// サウンド
+#define SOUND_STOP          0
+#define SOUND_HIT           1
+#define SOUND_CLEAR         2
+#define SOUND_FAIL          3
+#define SOUND_MISS          4
 
 #endif
