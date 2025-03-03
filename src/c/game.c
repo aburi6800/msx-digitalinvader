@@ -432,7 +432,7 @@ void game_init()
     // 画面の基本部分を描画
     offscr_putTextRect(10, 8, 12, 6, mainScreenData);
     offscr_putTextRect(10,19, 12, 2, controlGuideData);
-    offscr_putTextLn(22, 0, "./250302-2");
+    offscr_putTextLn(24, 0, "./250303");
 
     change_game_state(STATE_OVER);
 }
@@ -456,6 +456,7 @@ void game_start()
         lcd_update();
     } else if (game_tick > 120) {
         lcd_clear();
+        offscr_putTextLn( 7, 15, ":; <<<<<<<<<<<<<<<");
         for (int i = 0; i < 6; i++) {
             enemy_line[i] = 0;
         }
@@ -491,6 +492,13 @@ void game_main_player_shot()
         return;
     }
 
+    // ビームゲージ更新
+    offscr_putTextLn(10 + player_shot_left / 2, 15, "> ");
+    if (player_shot_left % 2 != 0) {
+        offscr_putTextLn(10 + player_shot_left / 2, 15, "=");
+    }
+
+    // ヒットチェック
     hit_idx = 0;
     for (int i = 0; i < 6; i++) {
         if (enemy_line[i] == player_number) {
@@ -568,7 +576,7 @@ void game_main_player_shot()
 void game_main_player()
 {
     // 入力情報取得
-    buff_stick = get_stick(0);
+    buff_stick = get_stick(0) + get_stick(1);
 
     if (buff_stick == STICK_NONE) {
         // 未入力の時は入力フラグをfalseにする
@@ -693,7 +701,7 @@ void game_clear()
         psg_write( 8, 0x00);                // R#8  : チャンネルA音量
         sound_time = 10;
     } else if (game_tick > 60) {
-        enemy_wait_time = enemy_wait_time - game_round * 5;
+        enemy_wait_time = enemy_wait_time - 5;
         if (enemy_wait_time < 40) {
             enemy_wait_time = 40;
         }
@@ -765,7 +773,7 @@ void game_over()
     if (game_tick == 1) {
         // メッセージ表示
         offscr_putTextLn(11,  6, "GAME  OVER");
-        offscr_putTextLn(11, 15, "PUSH SPACE");
+        offscr_putTextLn( 7, 15, "  PUSH SPACE KEY  ");
         // LCD表示
         lcd_clear();
         lcd_setNumber(game_round, 0, 3);
@@ -774,13 +782,13 @@ void game_over()
         lcd_update();
     }
 
-    buff_trigger = get_trigger(0);          // トリガ情報取得
+    buff_trigger = get_trigger(0) + get_trigger(1); // トリガ情報取得
     int rnd = get_rnd();                    // 乱数を発行してパターンを変える
 
     if (buff_trigger != 0) {
         // メッセージ消去
         offscr_putTextLn(11,  6, "          ");
-        offscr_putTextLn(11, 15, "          ");
+        offscr_putTextLn( 7, 15, ":; <<<<<<<<<<<<<<<");
         // 全体初期設定
         game_round = 1;
         game_score = 0;
