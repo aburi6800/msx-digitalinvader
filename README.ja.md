@@ -55,8 +55,10 @@
 
 - `z88dk`と`cmake`がインストールされている前提となります。
 - `z88dk`については、以下リンク先を参照ください。
+
     [z88dk installation](https://github.com/z88dk/z88dk/wiki/installation)
-- `cmake'がインストールされていない場合は、以下コマンドでインストールします。
+
+- `cmake`がインストールされていない場合は、以下コマンドでインストールします。
     ```
     sudo apt install cmake
     ```
