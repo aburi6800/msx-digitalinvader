@@ -19,6 +19,13 @@
 
 <br>
 
+## Overview
+
+This is a MSX reproduction of the "Digital Invader" game from the Casio SL-880.
+There are some differences in details, but the basic rules are the same.
+
+<br>
+
 ## How to play
 
 ### Control
@@ -43,7 +50,32 @@
 
 <br>
 
-## Build
+## Build from C-source
+
+- It is assumed that `z88dk` and `cmake` are installed.
+- Please refer to the following link for `z88dk`.
+    [z88dk installation](https://github.com/z88dk/z88dk/wiki/installation)
+- If `cmake' is not installed, use the following command to install it.
+    ```
+    sudo apt install cmake
+    ```
+
+<br>
+
+- For the first time only, go to the cloned directory and execute the following command.
+    ```
+    mkdir dist
+    cd build
+    (cd /home/hitoshi/Development/git/aburi6800/msx-digitalinvader/build && cmake -DCMAKE_TOOLCHAIN_FILE=/home/hitoshi/Development/git/aburi6800/msx-digitalinvader/cmake/z88dk.cmake ..)
+    ```
+
+<br>
+
+- Next, the following command will create a `degi-inv.rom` file in the `dist` directory.
+    ```
+    cd build
+    make clean && make
+    ```
 
 <br>
 

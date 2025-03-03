@@ -7,6 +7,13 @@
 
 <br>
 
+## 概要
+
+カシオ社「SL-880」に搭載された「デジタルインベーダー」をMSXで再現したものです。
+細かいところに違いがあると思いますが、基本的なルールは同じになっています。
+
+<br>
+
 ## WebMSXでプレイする
 
 - 以下のURLにアクセスしてください。
@@ -44,7 +51,32 @@
 
 <br>
 
-## ビルド方法
+## Cソースからのビルド方法
+
+- `z88dk`と`cmake`がインストールされている前提となります。
+- `z88dk`については、以下リンク先を参照ください。
+    [z88dk installation](https://github.com/z88dk/z88dk/wiki/installation)
+- `cmake'がインストールされていない場合は、以下コマンドでインストールします。
+    ```
+    sudo apt install cmake
+    ```
+
+<br>
+
+- 初回のみ、cloneしたディレクトリに移動し、以下コマンドを実行します。
+```
+mkdir dist
+cd build
+(cd /home/hitoshi/Development/git/aburi6800/msx-digitalinvader/build && cmake -DCMAKE_TOOLCHAIN_FILE=/home/hitoshi/Development/git/aburi6800/msx-digitalinvader/cmake/z88dk.cmake ..)
+```
+
+<br>
+
+- 次に、以下コマンドを実行すると、`dist`ディレクトリに`degi-inv.rom`ファイルが作成されます。
+    ```
+    cd build
+    make clean && make
+    ```
 
 <br>
 
