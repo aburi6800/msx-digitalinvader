@@ -82,6 +82,27 @@
 
 <br>
 
+## Release notes
+
+ver.20250303-2
+- Clean up around sound data and playback processing
+
+ver.20250303
+- add screen display of remaining number of beams
+- support for joystick
+- slow increase in difficulty
+
+ver.20250302-2
+- Fix a bug that game over does not occur even if the number of beam ammunition runs out
+
+ver.20250302
+- Initial completed version released
+
+ver.20250301
+- Prototype version (sound not supported) released
+
+<br>
+
 ## License
 
 MIT License
