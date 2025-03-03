@@ -9,8 +9,8 @@
 
 ## 概要
 
-カシオ社「SL-880」に搭載された「デジタルインベーダー」をMSXで再現したものです。
-細かいところに違いがあると思いますが、基本的なルールは同じになっています。
+- [カシオ SL-880](https://www.casio.com/jp/basic-calculators/product.SL-880/)に搭載された「デジタルインベーダー」をMSXで再現したものです。
+- 細かいところに違いがあると思いますが、基本的なルールは同じになっています。
 
 <br>
 
@@ -19,9 +19,11 @@
 - 以下のURLにアクセスしてください。
 
     - C言語バージョン
+
     https://webmsx.org/?MACHINE=MSX1&CARTRIDGE1_URL=https://github.com/aburi6800/msx-digitalinvader/raw/main/dist/dgtl-inv.rom
 
     - BASICバージョン
+
     https://webmsx.org/?MACHINE=MSXTRJ&DISKA_URL=https://github.com/aburi6800/msx-digitalinvader/raw/main/DGTL-INV.dsk
 
 <br>

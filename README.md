@@ -7,22 +7,24 @@
 
 <br>
 
+## Overview
+
+- This is a MSX reproduction of the "Digital Invader" game from the [Casio SL-880](https://www.casio.com/jp/basic-calculators/product.SL-880/).
+- There are some differences in details, but the basic rules are the same.
+
+<br>
+
 ## Play in WebMSX
 
 - Please access the following URL.
 
     - C Language version
+
     https://webmsx.org/?MACHINE=MSX1&CARTRIDGE1_URL=https://github.com/aburi6800/msx-digitalinvader/raw/main/dist/dgtl-inv.rom
 
     - MSX-BASIC verison
+
     https://webmsx.org/?MACHINE=MSXTRJ&DISKA_URL=https://github.com/aburi6800/msx-digitalinvader/raw/main/DGTL-INV.dsk
-
-<br>
-
-## Overview
-
-This is a MSX reproduction of the "Digital Invader" game from the Casio SL-880.
-There are some differences in details, but the basic rules are the same.
 
 <br>
 
