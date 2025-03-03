@@ -64,11 +64,10 @@
 <br>
 
 - 初回のみ、cloneしたディレクトリに移動し、以下コマンドを実行します。
-```
-mkdir dist
-cd build
-(cd /home/hitoshi/Development/git/aburi6800/msx-digitalinvader/build && cmake -DCMAKE_TOOLCHAIN_FILE=/home/hitoshi/Development/git/aburi6800/msx-digitalinvader/cmake/z88dk.cmake ..)
-```
+    ```
+    mkdir build
+    (cd build && cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/z88dk.cmake ..)
+    ```
 
 <br>
 

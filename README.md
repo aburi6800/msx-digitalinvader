@@ -64,9 +64,8 @@ There are some differences in details, but the basic rules are the same.
 
 - For the first time only, go to the cloned directory and execute the following command.
     ```
-    mkdir dist
-    cd build
-    (cd /home/hitoshi/Development/git/aburi6800/msx-digitalinvader/build && cmake -DCMAKE_TOOLCHAIN_FILE=/home/hitoshi/Development/git/aburi6800/msx-digitalinvader/cmake/z88dk.cmake ..)
+    mkdir build
+    (cd build && cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/z88dk.cmake ..)
     ```
 
 <br>
