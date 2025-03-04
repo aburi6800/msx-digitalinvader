@@ -12,14 +12,51 @@ extern uint8_t BANK_PATTERN_0[];
 // pcgdata.asm : BANK_COLOR_0への参照
 extern uint8_t BANK_COLOR_0[];
 
-// ゲーム状態
+// ゲーム状態Enum
 typedef enum {
-    STATE_START,
-    STATE_GAME,
-    STATE_CLEAR,
-    STATE_MISS,
-    STATE_OVER
+    STATE_START,                            // スタート
+    STATE_GAME,                             // ゲームメイン
+    STATE_CLEAR,                            // クリア
+    STATE_MISS,                             // ミス
+    STATE_OVER                              // ゲームオーバー
 } game_state_t;
+
+// 操作入力情報構造体
+typedef struct {
+    uint8_t input_stick;                    // 入力バッファ（レバー）
+    uint8_t input_trigger;                  // 入力バッファ（トリガ）
+    bool_t input_stick_flag;                // 入力フラグ（レバー）
+    bool_t input_trigger_flag;              // 入力フラグ（トリガ）
+} Control_t;
+Control_t control;
+
+// ゲーム情報構造体
+typedef struct {
+    uint8_t round;                          // ラウンド
+    uint16_t score;                         // スコア
+    game_state_t state;                     // ゲームの状態
+    uint16_t tick;                          // ゲーム経過時間
+} Game_t;
+Game_t game;
+
+// プレイヤー構造体
+typedef struct {
+    uint8_t number;                         // プレイヤーの数字（内部的には表示する値+1を保持）
+    uint8_t left;                           // プレイヤーの残り
+    uint8_t shot_left;                      // プレイヤーの残弾数
+} Player_t;
+Player_t player;
+
+// 敵構造体
+typedef struct {
+    uint8_t line[6];                        // 敵の列（内部的には表示する値+1を保持、ゼロは空白）
+    uint8_t wait_cnt;                       // 敵のウェイトカウンタ
+    uint8_t wait_time;                      // 敵のウェイトタイム
+    uint8_t left;                           // 敵の残数
+    uint8_t summary;                        // 敵の数字の合計数
+    bool_t ufo_flg;                         // UFO発生フラグ
+} Enemy_t;
+Enemy_t enemy;
 
 // サウンドデータ
 uint8_t sound_data[5][16] = {
@@ -65,56 +102,6 @@ uint8_t lcdData[10] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15};
 
 // サウンド再生時間
 uint16_t sound_time = 0;
-
-// 入力バッファ（方向）
-uint8_t buff_stick = 0;
-
-// 入力バッファ（トリガ）
-int buff_trigger = 0;
-
-// 入力フラグ
-bool_t input_flag = false;
-
-// ラウンド
-uint8_t game_round = 0;
-
-// スコア
-uint16_t game_score = 0;
-
-// ゲームの状態
-game_state_t game_state;
-
-// ゲーム経過時間
-uint16_t game_tick = 0;
-
-// プレイヤーの数字
-// 内部的には、表示する値+1を保持
-uint8_t player_number = 1;
-
-// プレイヤーの残り
-uint8_t player_left = 3;
-
-// プレイヤーの残弾数
-uint8_t player_shot_left = 30;
-
-// 敵の列
-// 内部的には、表示する値+1を保持（ゼロは空白）
-uint8_t enemy_line[] = {0, 0, 0, 0, 0, 0};
-
-// 敵のウェイトカウンタ
-uint8_t enemy_wait_cnt = 0;
-
-// 敵のウェイトタイム
-uint8_t enemy_wait_time = 0;
-
-// 敵の残数
-uint8_t enemy_left = 0;
-
-// 敵の数字の合計数
-uint8_t enemy_summary = 0;
-
-// UFO発生フラグ
-bool_t enemy_ufo_flg = false;
 
 // VSYNC処理実行フラグ
 bool_t vsync_exec = false;
@@ -183,6 +170,56 @@ void play_sound(uint8_t sound_no) {
 }
 
 /*
+ * 操作入力初期化処理
+ *
+ * args:
+ * - void
+ *
+ * return:
+ * - void
+ */
+void init_control()
+{
+    control.input_stick_flag = false;
+}
+
+/*
+ * 操作入力取得処理
+ *
+ * args:
+ * - void
+ *
+ * return:
+ * - void
+ */
+void get_control()
+{
+    control.input_stick = get_stick(0) + get_stick(1);
+    // レバー押しっぱなし抑止
+    if (control.input_stick == STICK_NONE) {
+        control.input_stick_flag = false;
+    } else {
+        if (control.input_stick_flag) {
+            control.input_stick = STICK_NONE;
+        } else {
+            control.input_stick_flag = true;
+        }
+    }
+
+    control.input_trigger = get_trigger(0) + get_trigger(1);
+    // トリガ押しっぱなし抑止
+    if (control.input_trigger == TRIGGER_OFF) {
+        control.input_trigger_flag = false;
+    } else {
+        if (control.input_trigger_flag) {
+            control.input_trigger = TRIGGER_OFF;
+        } else {
+            control.input_trigger_flag = true;
+        }
+    }
+}
+
+/*
  * ゲーム状態変更
  *
  * args:
@@ -193,8 +230,12 @@ void play_sound(uint8_t sound_no) {
  */
 void change_game_state(game_state_t s)
 {
-    game_state = s;
-    game_tick = 0;
+    game.state = s;
+    game.tick = 0;
+
+    while (control.input_stick != STICK_NONE || control.input_trigger != TRIGGER_OFF) {
+        get_control();                      // 操作入力取得
+    }
 }
 
 /*
@@ -331,7 +372,7 @@ void lcd_setText(char* text, uint8_t pos)
  */
 void lcd_setNumber(uint16_t val, uint8_t pos, uint8_t len)
 {
-    int i = 0;
+    uint8_t i = 0;
     uint8_t num[10];
 
     // 数値を文字列に変換
@@ -459,7 +500,7 @@ void game_init()
     // 画面の基本部分を描画
     offscr_putTextRect(10, 8, 12, 6, mainScreenData);
     offscr_putTextRect(10,19, 12, 2, controlGuideData);
-    offscr_putTextLn(22, 0, "./250303-2");
+    offscr_putTextLn(24, 0, "./250304");
 
     change_game_state(STATE_OVER);
 }
@@ -475,25 +516,25 @@ void game_init()
  */
 void game_start()
 {
-    if (game_tick == 1) {
+    if (game.tick == 1) {
         lcd_clear();
-        lcd_setNumber(game_round, 0, 3);
+        lcd_setNumber(game.round, 0, 3);
         lcd_setText("-", 3);
-        lcd_setNumber(game_score, 4, 6);
+        lcd_setNumber(game.score, 4, 6);
         lcd_update();
-    } else if (game_tick > 120) {
+    } else if (game.tick > 120) {
         lcd_clear();
         offscr_putTextLn( 7, 15, ":; <<<<<<<<<<<<<<<");
+        player.number = 1;
+        player.shot_left = 30;
         for (int i = 0; i < 6; i++) {
-            enemy_line[i] = 0;
+            enemy.line[i] = 0;
         }
-        player_number = 1;
-        player_shot_left = 30;
-        input_flag = false;
-        enemy_summary = 0;
-        enemy_left = 16;
-        enemy_ufo_flg = false;
-        enemy_wait_cnt = 254;
+        enemy.summary = 0;
+        enemy.left = 16;
+        enemy.ufo_flg = false;
+        enemy.wait_cnt = 254;
+        init_control();
         change_game_state(STATE_GAME);
     }
 }
@@ -510,26 +551,26 @@ void game_start()
 void game_main_player_shot()
 {
     bool_t hit;
-    int hit_idx;
-    int check_cnt;
+    uint8_t hit_idx;
+    uint8_t check_cnt;
 
-    if (--player_shot_left == 0) {
+    if (--player.shot_left == 0) {
         // 弾切れしたらゲームオーバー
         change_game_state(STATE_OVER);
         return;
     }
 
     // ビームゲージ更新
-    offscr_putTextLn(10 + player_shot_left / 2, 15, "> ");
-    if (player_shot_left % 2 != 0) {
-        offscr_putTextLn(10 + player_shot_left / 2, 15, "=");
+    offscr_putTextLn(10 + player.shot_left / 2, 15, "> ");
+    if (player.shot_left % 2 != 0) {
+        offscr_putTextLn(10 + player.shot_left / 2, 15, "=");
     }
 
     // ヒットチェック
     hit_idx = 0;
     for (int i = 0; i < 6; i++) {
-        if (enemy_line[i] == player_number) {
-            enemy_line[i] = 0;
+        if (enemy.line[i] == player.number) {
+            enemy.line[i] = 0;
             hit_idx = i + 1;
             break;
         }
@@ -547,14 +588,14 @@ void game_main_player_shot()
     sound_time = 5;
 
     // スコア加算
-    game_score = game_score + ((player_number == 11) ? 300 : 10);
+    game.score += ((player.number == 11) ? 300 : 10);
 
     // 敵表示数チェック
     check_cnt = 0;
     for (int i = 0; i < 6; i++) {
-        check_cnt += enemy_line[i];
+        check_cnt += enemy.line[i];
     }
-    if (enemy_left < 1 && check_cnt == 0) {
+    if (enemy.left < 1 && check_cnt == 0) {
         // 敵残数と表示数がゼロならクリア
         change_game_state(STATE_CLEAR);
         return;
@@ -564,17 +605,17 @@ void game_main_player_shot()
     hit_idx--;
     if (hit_idx > 0) {
         for (int i = hit_idx; i > 0; i--) {
-            enemy_line[i] = enemy_line[i - 1];
-            enemy_line[i - 1] = 0;
+            enemy.line[i] = enemy.line[i - 1];
+            enemy.line[i - 1] = 0;
         }
     }
 
     // UFO出現チェック
-    if (player_number > 1 && player_number < 11) {
-        enemy_summary += player_number - 1;
-        if (enemy_summary % 10 == 0 && enemy_summary > 0) {
+    if (player.number > 1 && player.number < 11) {
+        enemy.summary += player.number - 1;
+        if (enemy.summary % 10 == 0 && enemy.summary > 0) {
             // 倒した敵の数の合計が10の倍数ならUFO出現
-            enemy_ufo_flg = true;
+            enemy.ufo_flg = true;
         }
     }
 }
@@ -590,22 +631,16 @@ void game_main_player_shot()
  */
 void game_main_player()
 {
-    // 入力情報取得
-    buff_stick = get_stick(0) + get_stick(1);
-
-    if (buff_stick == STICK_NONE) {
-        // 未入力の時は入力フラグをfalseにする
-        input_flag = false;
-    } else if (buff_stick == STICK_LEFT && !input_flag) {
-        input_flag = true;
+    get_control();                          // 操作入力取得
+    if (control.input_stick == STICK_LEFT) {
         // 左入力で数字変更（0～9、n）
-        player_number++;
-        if (player_number > 11) {
-            player_number = 1;
+        player.number++;
+        if (player.number > 11) {
+            player.number = 1;
         }
-    } else if (buff_stick == STICK_RIGHT && !input_flag) {
+    } else if (control.input_stick == STICK_RIGHT || control.input_trigger) {
         // 右入力でショット
-        input_flag = true;
+        control.input_stick_flag = true;
         game_main_player_shot();
     }
 }
@@ -622,34 +657,34 @@ void game_main_player()
 void game_main_enemy()
 {
     // 敵出現待ちの時は処理を抜ける
-    if (enemy_wait_cnt++ < enemy_wait_time) {
+    if (enemy.wait_cnt++ < enemy.wait_time) {
         return;
     }
     // ウェイトカウンタリセット
-    enemy_wait_cnt = 0;
+    enemy.wait_cnt = 0;
     // 既に一番左に敵がいたらミス
-    if (enemy_line[0] > 0) {
+    if (enemy.line[0] > 0) {
         change_game_state(STATE_MISS);
         return;
     }
     // 全体を左にシフト
     for (int i = 0; i < 5; i++) {
-        enemy_line[i] = enemy_line[i + 1];
+        enemy.line[i] = enemy.line[i + 1];
     }
-    if (enemy_left > 0) {
+    if (enemy.left > 0) {
         // 敵残数デクリメント
-        enemy_left--;
-        if (enemy_ufo_flg) {
+        enemy.left--;
+        if (enemy.ufo_flg) {
             // UFO出現
-            enemy_ufo_flg = false;
-            enemy_line[5] = 11;
+            enemy.ufo_flg = false;
+            enemy.line[5] = 11;
         } else {
             // 敵出現
-            enemy_line[5] = get_rnd() % 10 + 1;
+            enemy.line[5] = get_rnd() % 10 + 1;
         }
     } else {
         // 敵残数ゼロなら何も表示しない
-        enemy_line[5] = 0;
+        enemy.line[5] = 0;
     }
 }
 
@@ -664,13 +699,13 @@ void game_main_enemy()
  */
 void game_main_updateLCDData()
 {
-    lcdData[1] = player_number - 1;         // プレイヤー
-    lcdData[2] = player_left + 11;          // 残機数
+    lcdData[1] = player.number - 1;         // プレイヤー
+    lcdData[2] = player.left + 11;          // 残機数
     for (int i = 0; i < 6; i++) {           // 敵
-        if (enemy_line[i] == 0) {
+        if (enemy.line[i] == 0) {
             lcdData[i + 3] = LCD_SPACE;
         } else {
-            lcdData[i + 3] = enemy_line[i] - 1;
+            lcdData[i + 3] = enemy.line[i] - 1;
         }
     }
     lcd_update();
@@ -703,18 +738,18 @@ void game_main()
  */
 void game_clear()
 {
-    if (game_tick == 1 || game_tick == 3 || game_tick == 5) {
+    if (game.tick == 1 || game.tick == 3 || game.tick == 5) {
         play_sound(SOUND_CLEAR);
         sound_time = 10;
-    } else if (game_tick == 2 || game_tick == 4 || game_tick == 6) {
+    } else if (game.tick == 2 || game.tick == 4 || game.tick == 6) {
         play_sound(SOUND_STOP);
         sound_time = 10;
-    } else if (game_tick > 60) {
-        enemy_wait_time = enemy_wait_time - 5;
-        if (enemy_wait_time < 40) {
-            enemy_wait_time = 40;
+    } else if (game.tick > 60) {
+        enemy.wait_time = enemy.wait_time - 5;
+        if (enemy.wait_time < 40) {
+            enemy.wait_time = 40;
         }
-        game_round++;
+        game.round++;
         change_game_state(STATE_START);
     }
 }
@@ -730,34 +765,34 @@ void game_clear()
  */
 void game_miss()
 {
-    if (game_tick == 1) {
+    if (game.tick == 1) {
         play_sound(SOUND_MISS);
         sound_time = 20;
-        player_left--;
-        if (player_left == 0) {
+        player.left--;
+        if (player.left == 0) {
             change_game_state(STATE_OVER);
         } else {
             // LCD表示
             lcd_clear();
-            lcd_setNumber(game_round, 0, 3);
+            lcd_setNumber(game.round, 0, 3);
             lcd_setText("-", 3);
-            lcd_setNumber(game_score, 4, 6);
+            lcd_setNumber(game.score, 4, 6);
             lcd_update();
         }
-    } else if (game_tick > 100) {
+    } else if (game.tick > 100) {
         // 画面上に残った敵を残りに加える
         for (int i = 0; i < 6; i++) {
-            if (enemy_line[i] > 0) {
-                enemy_left++;
+            if (enemy.line[i] > 0) {
+                enemy.left++;
             }
-            enemy_line[i] = 0;
+            enemy.line[i] = 0;
         }
         lcd_clear();
-        player_number = 1;
-        input_flag = false;
-        enemy_summary = 0;
-        enemy_wait_cnt = 254;
+        player.number = 1;
+        enemy.summary = 0;
+        enemy.wait_cnt = 254;
         sound_time = 0;
+        init_control();
         change_game_state(STATE_GAME);
     }
 }
@@ -773,32 +808,33 @@ void game_miss()
  */
 void game_over()
 {
-    if (game_tick == 1) {
+    if (game.tick == 1) {
         // メッセージ表示
         offscr_putTextLn(11,  6, "GAME  OVER");
-        offscr_putTextLn( 7, 15, "  PUSH SPACE KEY  ");
         // LCD表示
         lcd_clear();
-        lcd_setNumber(game_round, 0, 3);
+        lcd_setNumber(game.round, 0, 3);
         lcd_setText("-", 3);
-        lcd_setNumber(game_score, 4, 6);
+        lcd_setNumber(game.score, 4, 6);
         lcd_update();
-    }
-
-    buff_trigger = get_trigger(0) + get_trigger(1); // トリガ情報取得
-    int rnd = get_rnd();                    // 乱数を発行してパターンを変える
-
-    if (buff_trigger != 0) {
-        // メッセージ消去
-        offscr_putTextLn(11,  6, "          ");
-        offscr_putTextLn( 7, 15, ":; <<<<<<<<<<<<<<<");
-        // 全体初期設定
-        game_round = 1;
-        game_score = 0;
-        player_left = 3;
-        enemy_wait_time = 120;
-        // ゲームスタート処理に遷移
-        change_game_state(STATE_START);
+    } else if (game.tick == 60) {
+        // メッセージ表示
+        offscr_putTextLn( 7, 15, "  PUSH SPACE KEY  ");
+    } else {
+        int rnd = get_rnd();                    // 乱数を発行してパターンを変える
+        get_control();                          // 操作入力取得
+        if (control.input_trigger != 0) {
+            // メッセージ消去
+            offscr_putTextLn(11,  6, "          ");
+            offscr_putTextLn( 7, 15, ":; <<<<<<<<<<<<<<<");
+            // 全体初期設定
+            game.round = 1;
+            game.score = 0;
+            player.left = 3;
+            enemy.wait_time = 120;
+            // ゲームスタート処理に遷移
+            change_game_state(STATE_START);
+        }
     }
 }
 
@@ -819,8 +855,8 @@ void game_update()
             play_sound(SOUND_STOP);
         }
     } else {
-        game_tick++;
-        switch (game_state) {
+        game.tick++;
+        switch (game.state) {
             case STATE_START:
                 game_start();
                 break;

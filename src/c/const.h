@@ -58,7 +58,8 @@
 #define STICK_UPLEFT        8
 
 // TRIGGER定数
-#define TRIGGER_SPACE       255
+#define TRIGGER_ON          255
+#define TRIGGER_OFF         0
 
 // サウンド
 #define SOUND_STOP          0

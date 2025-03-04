@@ -32,12 +32,14 @@
 
 ### Control
 
-- Cursor keys left/Joypad left
+- Cursor keys left / Joypad left
     - Aiming
 - Cursor key right / Joypad right
     - Beam
 - Spacebar / Trigger button
     - Game Start
+    - Beam
+
 <br>
 
 ### Rules
@@ -84,6 +86,10 @@
 
 ## Release notes
 
+ver.20250304
+- Code Refactor
+- Make it possible to shoot a beam even with a trigger
+
 ver.20250303-2
 - Clean up around sound data and playback processing
 
@@ -96,7 +102,7 @@ ver.20250302-2
 - Fix a bug that game over does not occur even if the number of beam ammunition runs out
 
 ver.20250302
-- Initial completed version released
+- Release version released
 
 ver.20250301
 - Prototype version (sound not supported) released
