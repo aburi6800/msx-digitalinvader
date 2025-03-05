@@ -86,6 +86,9 @@
 
 ## Release notes
 
+ver.20250305
+- Initialize the trigger state with init_control as well.
+
 ver.20250304
 - Code Refactor
 - Make it possible to shoot a beam even with a trigger

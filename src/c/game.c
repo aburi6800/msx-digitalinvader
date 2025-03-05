@@ -180,7 +180,10 @@ void play_sound(uint8_t sound_no) {
  */
 void init_control()
 {
+    control.input_stick = STICK_NONE;
+    control.input_trigger = TRIGGER_OFF;
     control.input_stick_flag = false;
+    control.input_trigger_flag = false;
 }
 
 /*
@@ -500,7 +503,7 @@ void game_init()
     // 画面の基本部分を描画
     offscr_putTextRect(10, 8, 12, 6, mainScreenData);
     offscr_putTextRect(10,19, 12, 2, controlGuideData);
-    offscr_putTextLn(24, 0, "./250304");
+    offscr_putTextLn(24, 0, "./250305");
 
     change_game_state(STATE_OVER);
 }
@@ -817,9 +820,10 @@ void game_over()
         lcd_setText("-", 3);
         lcd_setNumber(game.score, 4, 6);
         lcd_update();
-    } else if (game.tick == 60) {
+    } else if (game.tick == 90) {
         // メッセージ表示
         offscr_putTextLn( 7, 15, "  PUSH SPACE KEY  ");
+        init_control();
     } else {
         int rnd = get_rnd();                    // 乱数を発行してパターンを変える
         get_control();                          // 操作入力取得

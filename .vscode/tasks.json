@@ -41,7 +41,7 @@
         "Deploy to MAME"
       ],
       "linux": {
-          "command": "(cd ${workspaceFolder}/mics/mame && ./mame cbiosm1jp dgtl-inv)"
+          "command": "(cd ${workspaceFolder}/mics/mame && ./mame cbiosm1jp dgtlinv)"
       }
     },
     {
@@ -51,7 +51,7 @@
         "Deploy to MAME"
       ],
       "linux": {
-          "command": "(cd ${workspaceFolder}/mics/mame && ./mame cbiosm1jp dgtl-inv -debugger gdbstub -debug)"
+          "command": "(cd ${workspaceFolder}/mics/mame && ./mame cbiosm1jp dgtlinv -debugger gdbstub -debug)"
       }
     },
     {
@@ -61,7 +61,7 @@
       ],
       "type": "shell",
       "linux": {
-          "command": "(cd dist/ && rm -f ${workspaceFolder}/mics/mame/roms/msx1_cart/dgtl-inv.zip && zip -j ${workspaceFolder}/mics/mame/roms/msx1_cart/dgtl-inv.zip dgtl-inv.rom)"
+          "command": "(cd dist/ && rm -f ${workspaceFolder}/mics/mame/roms/msx1_cart/dgtlinv.zip && zip -j ${workspaceFolder}/mics/mame/roms/msx1_cart/dgtlinv.zip ./dgtl-inv.rom)"
       }
     },
   ]

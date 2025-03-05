@@ -1,19 +1,19 @@
 {
   "configurations": [
     {
-      "type": "emulicious-debugger",
+      "name": "Attach to MAME gdbserver",
+      "type": "gdb",
       "request": "attach",
-      "name": "Attach to Emulicious",
-      "port": 58870
-    },
-    {
-      "type": "emulicious-debugger",
-      "request": "launch",
-      "name": "Launch in Emulicious",
-//      "program": "${workspaceFolder}/${command:AskForProgramName}",
-      "program": "${workspaceFolder}/dist/dgtl-inv.rom",
-      "port": 58870,
-      "stopOnEntry": true
+      "target": "127.0.0.1:23946",
+      "remote": true,
+      "cwd": "${workspaceRoot}",
+      "gdbpath": "${env:Z88DK_HOME}/bin/z88dk-gdb",
+      "debugger_args": [
+        "-x",
+        "${workspaceRoot}/dist/dgtl-inv.map" // or appropriate .map of your project (-m -debug needed!)
+      ],
+      "autorun": [
+      ]
     },
     {
       "type": "dezog",
@@ -25,14 +25,14 @@
       },
       "z88dkv2": [ // Z88DK 2.3(dev) and DeZog 3.1 or higher
         {
-          "path": "src/msx/main.asm.lis",
+          "path": "src/c/game.c.lis",
           "mapFile": "dist/dgtl-inv.map",
           "srcDirs": [
             ""
           ] // Sources mode
         },
         {
-          "path": "src/msx/psgdriver.asm.lis",
+          "path": "src/c/main.c.lis",
           "mapFile": "dist/dgtl-inv.map",
           "srcDirs": [
             ""
