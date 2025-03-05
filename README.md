@@ -86,23 +86,26 @@
 
 ## Release notes
 
+ver.20250306
+- bug : sound effects won't stop
+
 ver.20250305
-- Initialize the trigger state with init_control as well.
+- todo : Initialize the trigger state with init_control as well.
 
 ver.20250304
 - Code Refactor
-- Make it possible to shoot a beam even with a trigger
+- todo : Make it possible to shoot a beam even with a trigger
 
 ver.20250303-2
-- Clean up around sound data and playback processing
+- todo : Clean up around sound data and playback processing
 
 ver.20250303
-- add screen display of remaining number of beams
-- support for joystick
-- slow increase in difficulty
+- todo : add screen display of remaining number of beams
+- todo : support for joystick
+- todo : slow increase in difficulty
 
 ver.20250302-2
-- Fix a bug that game over does not occur even if the number of beam ammunition runs out
+- bug : Game over does not occur even if 30 rounds are fired in a round
 
 ver.20250302
 - Release version released
